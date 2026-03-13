@@ -118,7 +118,7 @@
       } else {
         n.x += n.vx;
         n.y += n.vy;
-        if (n.x < n.r || n.x > W - (NODE_TYPES[n.type].radius)) {
+        if (n.x < NODE_TYPES[n.type].radius || n.x > W - (NODE_TYPES[n.type].radius)) {
           n.vx *= -1;
           n.x = Math.max(NODE_TYPES[n.type].radius, Math.min(W - NODE_TYPES[n.type].radius, n.x));
         }
@@ -245,7 +245,7 @@
 
     if (found) {
       tooltip.classList.remove('hidden');
-      tooltip.textContent = `@handle_${found.handle}\nTYPE: ${found.type.toUpperCase()}\nRISK: ${found.risk}%`;
+      tooltip.textContent = `@${found.handle}\nTYPE: ${found.type.toUpperCase()}\nRISK: ${found.risk}%`;
       const x = e.clientX - rect.left + 14;
       const y = e.clientY - rect.top - 10;
       tooltip.style.left = x + 'px';
