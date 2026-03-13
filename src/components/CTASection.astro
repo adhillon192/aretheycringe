@@ -1,0 +1,85 @@
+---
+---
+
+<section id="waitlist" class="py-24 px-6 bg-surface">
+  <div class="max-w-xl mx-auto text-center">
+    <h2 class="font-display text-white mb-4" style="font-size:clamp(2.5rem,5vw,4.5rem)">GET EARLY ACCESS.</h2>
+    <p class="font-body text-textSecondary mb-8 text-base leading-relaxed max-w-[480px] mx-auto">
+      We're in private beta. Drop your email and be first to find out if they're cringe.
+    </p>
+
+    <!-- Email Form -->
+    <div id="waitlist-form-wrap" class="max-w-[480px] mx-auto">
+      <div class="flex flex-col sm:flex-row gap-0">
+        <input
+          id="waitlist-email"
+          type="email"
+          placeholder="your@email.com"
+          class="font-mono text-sm bg-bg border border-muted focus:border-accent outline-none text-white py-3 px-4 flex-1 rounded-none transition-colors"
+        />
+        <button
+          id="waitlist-submit"
+          class="font-display text-black bg-accent text-lg px-6 py-3 rounded-none hover:brightness-110 whitespace-nowrap transition-all"
+        >
+          JOIN THE LIST
+        </button>
+      </div>
+      <p id="email-error" class="font-mono text-xs text-accentRed mt-2 text-left hidden">&gt; invalid email address</p>
+    </div>
+
+    <!-- Success State -->
+    <div id="waitlist-success" class="hidden font-mono text-center">
+      <p class="text-accent text-sm mb-1">&gt; you're on the list.</p>
+      <p class="text-accent text-sm">&gt; we'll be in touch when we launch.</p>
+      <p class="text-muted text-xs mt-3">no spam. no data sold. we mean it.</p>
+    </div>
+
+    <p class="font-mono mt-4 text-center text-muted" style="font-size:0.7rem">
+      &gt; no spam  //  no data sold  //  revoke anytime
+    </p>
+
+    <p class="font-body text-textSecondary text-sm mt-4 text-center">
+      Join 1,200+ people already on the list.
+    </p>
+  </div>
+</section>
+
+<script is:inline>
+  (function() {
+    const emailInput = document.getElementById('waitlist-email');
+    const submitBtn = document.getElementById('waitlist-submit');
+    const formWrap = document.getElementById('waitlist-form-wrap');
+    const successEl = document.getElementById('waitlist-success');
+    const errorEl = document.getElementById('email-error');
+
+    function isValidEmail(email) {
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    submitBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const email = emailInput.value.trim();
+
+      if (!isValidEmail(email)) {
+        errorEl.classList.remove('hidden');
+        emailInput.classList.add('shake');
+        emailInput.addEventListener('animationend', () => {
+          emailInput.classList.remove('shake');
+        }, { once: true });
+        return;
+      }
+
+      errorEl.classList.add('hidden');
+      formWrap.classList.add('hidden');
+      successEl.classList.remove('hidden');
+    });
+
+    emailInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') submitBtn.click();
+    });
+
+    emailInput.addEventListener('input', () => {
+      errorEl.classList.add('hidden');
+    });
+  })();
+</script>

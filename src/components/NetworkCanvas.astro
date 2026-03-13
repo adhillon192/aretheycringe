@@ -1,0 +1,262 @@
+---
+---
+
+<section class="py-20 px-6 bg-surface relative" id="network">
+  <div class="max-w-7xl mx-auto">
+    <h2 class="font-display text-white mb-2" style="font-size:clamp(2rem,4vw,3rem)">THE NETWORK</h2>
+    <p class="font-body text-muted mb-8 text-sm">A live map of how follow graphs self-organize when analyzed.</p>
+  </div>
+
+  <div class="relative w-full">
+    <canvas id="networkCanvas" style="width:100%;height:560px;display:block"></canvas>
+    <div id="nodeTooltip" class="absolute hidden font-mono text-xs text-white bg-surfaceHigh border border-[#333] px-3 py-2 pointer-events-none z-10" style="white-space:pre"></div>
+  </div>
+</section>
+
+<script is:inline>
+(function() {
+  const canvas = document.getElementById('networkCanvas');
+  const tooltip = document.getElementById('nodeTooltip');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+  }
+  resize();
+  window.addEventListener('resize', () => { resize(); });
+
+  const NODE_TYPES = {
+    clean:      { radius: 5,  color: '#333333', border: '#555555', pulse: false },
+    flagged:    { radius: 7,  color: '#FF2D2D', border: '#FF2D2D', pulse: false },
+    bot:        { radius: 5,  color: '#FF7A00', border: '#FF7A00', pulse: false },
+    extremist:  { radius: 10, color: '#FF2D2D', border: '#E8FF00', pulse: true  },
+    conspiracy: { radius: 6,  color: '#FF7A00', border: '#FFAA00', pulse: false },
+  };
+
+  const TYPE_DIST = [
+    ...Array(60).fill('clean'),
+    ...Array(16).fill('flagged'),
+    ...Array(10).fill('bot'),
+    ...Array(8).fill('conspiracy'),
+    ...Array(6).fill('extremist'),
+  ];
+
+  function randHandle() {
+    const suffixes = ['99','_alt','_fan','daily','truth','patriot','real','usa','anon'];
+    const prefixes = ['user','acct','node','handle','ghost','anon','shadow'];
+    return prefixes[Math.floor(Math.random() * prefixes.length)] + '_' + suffixes[Math.floor(Math.random() * suffixes.length)];
+  }
+
+  const nodes = [];
+  for (let i = 0; i < 70; i++) {
+    const type = TYPE_DIST[i % TYPE_DIST.length];
+    nodes.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      vx: (Math.random() - 0.5) * 0.7,
+      vy: (Math.random() - 0.5) * 0.7,
+      type,
+      handle: randHandle(),
+      risk: Math.floor(Math.random() * 60) + 40,
+    });
+  }
+
+  let organized = false;
+  let organizingStart = null;
+  let dashLineVisible = false;
+  let dashLineTimer = null;
+  let rafId = null;
+  let pulsePhase = 0;
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  if (reducedMotion) {
+    // Jump straight to organized state
+    nodes.forEach(n => {
+      const isClean = n.type === 'clean';
+      n.x = (isClean ? 0.25 : 0.75) * canvas.width + (Math.random() - 0.5) * 80;
+      n.y = 0.5 * canvas.height + (Math.random() - 0.5) * 200;
+      n.vx = 0;
+      n.vy = 0;
+    });
+    organized = true;
+    dashLineVisible = true;
+    drawFrame();
+    return;
+  }
+
+  // Start organize mode after 5 seconds
+  setTimeout(() => {
+    organized = true;
+    organizingStart = performance.now();
+    setTimeout(() => {
+      dashLineVisible = true;
+    }, 1500);
+  }, 5000);
+
+  function isCleanNode(n) {
+    return n.type === 'clean';
+  }
+
+  function drawFrame(timestamp) {
+    const W = canvas.width;
+    const H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+    pulsePhase = (pulsePhase || 0) + 0.05;
+
+    // Update positions
+    nodes.forEach(n => {
+      if (organized) {
+        const targetX = isCleanNode(n) ? W * 0.25 : W * 0.75;
+        const targetY = H * 0.5;
+        n.x += (targetX - n.x) * 0.008;
+        n.y += (targetY - n.y) * 0.008;
+      } else {
+        n.x += n.vx;
+        n.y += n.vy;
+        if (n.x < n.r || n.x > W - (NODE_TYPES[n.type].radius)) {
+          n.vx *= -1;
+          n.x = Math.max(NODE_TYPES[n.type].radius, Math.min(W - NODE_TYPES[n.type].radius, n.x));
+        }
+        if (n.y < NODE_TYPES[n.type].radius || n.y > H - NODE_TYPES[n.type].radius) {
+          n.vy *= -1;
+          n.y = Math.max(NODE_TYPES[n.type].radius, Math.min(H - NODE_TYPES[n.type].radius, n.y));
+        }
+      }
+    });
+
+    // Draw edges
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const dx = a.x - b.x;
+        const dy = a.y - b.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        if (dist < 130) {
+          let edgeColor;
+          const aIsRed = a.type === 'flagged' || a.type === 'extremist';
+          const bIsRed = b.type === 'flagged' || b.type === 'extremist';
+          const aIsOrange = a.type === 'bot' || a.type === 'conspiracy';
+          const bIsOrange = b.type === 'bot' || b.type === 'conspiracy';
+
+          if (aIsRed || bIsRed) {
+            edgeColor = 'rgba(255,45,45,0.12)';
+          } else if (aIsOrange || bIsOrange) {
+            edgeColor = 'rgba(255,122,0,0.1)';
+          } else {
+            edgeColor = 'rgba(255,255,255,0.03)';
+          }
+
+          ctx.beginPath();
+          ctx.strokeStyle = edgeColor;
+          ctx.lineWidth = 1;
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+        }
+      }
+    }
+
+    // Draw nodes
+    nodes.forEach(n => {
+      const def = NODE_TYPES[n.type];
+
+      // Pulse ring for extremist
+      if (def.pulse) {
+        const pulseRadius = def.radius + 4 + Math.sin(pulsePhase) * 3;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, pulseRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = 'rgba(232,255,0,0.35)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      // Border circle
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, def.radius + 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = def.border;
+      ctx.fill();
+
+      // Fill circle
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, def.radius, 0, Math.PI * 2);
+      ctx.fillStyle = def.color;
+      ctx.fill();
+    });
+
+    // Dashed center line
+    if (dashLineVisible) {
+      ctx.save();
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.strokeStyle = '#E8FF00';
+      ctx.lineWidth = 1;
+      ctx.moveTo(W / 2, 0);
+      ctx.lineTo(W / 2, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+
+      // Labels
+      ctx.font = '11px "IBM Plex Mono", monospace';
+      ctx.fillStyle = '#888888';
+      ctx.fillText('CLEAN FOLLOWS', W * 0.05, 24);
+
+      ctx.fillStyle = '#FF2D2D';
+      ctx.fillText('FLAGGED ACCOUNTS', W * 0.55, 24);
+    }
+
+    rafId = requestAnimationFrame(drawFrame);
+  }
+
+  // IntersectionObserver to pause/resume
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        if (!rafId) rafId = requestAnimationFrame(drawFrame);
+      } else {
+        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+      }
+    });
+  }, { threshold: 0.1 });
+  observer.observe(canvas);
+
+  // Hover tooltip
+  const canvasRect = () => canvas.getBoundingClientRect();
+
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvasRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    let found = null;
+
+    for (const n of nodes) {
+      const dx = n.x - mx;
+      const dy = n.y - my;
+      if (Math.sqrt(dx * dx + dy * dy) < 14) {
+        found = n;
+        break;
+      }
+    }
+
+    if (found) {
+      tooltip.classList.remove('hidden');
+      tooltip.textContent = `@handle_${found.handle}\nTYPE: ${found.type.toUpperCase()}\nRISK: ${found.risk}%`;
+      const x = e.clientX - rect.left + 14;
+      const y = e.clientY - rect.top - 10;
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
+    } else {
+      tooltip.classList.add('hidden');
+    }
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    tooltip.classList.add('hidden');
+  });
+})();
+</script>
