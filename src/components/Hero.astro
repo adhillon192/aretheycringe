@@ -299,6 +299,22 @@
   const stepScanning = document.getElementById('step-scanning');
   const stepResults = document.getElementById('step-results');
 
+  function sendToWaitlist() {
+    const waitlist = document.getElementById('waitlist');
+    const waitlistSubmit = document.getElementById('waitlist-submit');
+
+    if (waitlist) waitlist.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    if (waitlistSubmit) {
+      waitlistSubmit.classList.remove('waitlist-pulse');
+      // Triggering layout guarantees animation restarts on repeated clicks.
+      void waitlistSubmit.offsetWidth;
+      waitlistSubmit.classList.add('waitlist-pulse');
+      waitlistSubmit.focus();
+      setTimeout(() => waitlistSubmit.classList.remove('waitlist-pulse'), 1800);
+    }
+  }
+
   analyzeBtn.addEventListener('click', () => {
     const handle = handleInput.value.trim();
     if (!handle) {
@@ -308,12 +324,25 @@
       }, { once: true });
       return;
     }
-    startScan(handle);
+    sendToWaitlist();
   });
 
   handleInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') analyzeBtn.click();
   });
+
+  document
+    .querySelectorAll('#connect-instagram button, #connect-twitter button, #connect-tiktok button')
+    .forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        sendToWaitlist();
+      });
+    });
+
+  /*
+   * Mock analyzer flow intentionally disabled until launch.
+   * Kept here commented for easy re-enable once backend is live.
 
   function startScan(handle) {
     // Hide input, show scanning
@@ -397,6 +426,7 @@
     radioPublic.checked = true;
     radioPublic.dispatchEvent(new Event('change'));
   });
+  */
 </script>
 
 <style>
@@ -442,6 +472,25 @@
   @media (prefers-reduced-motion: no-preference) {
     .shake {
       animation: shake 0.3s ease-in-out;
+    }
+
+    .waitlist-pulse {
+      animation: waitlistPulse 0.9s ease-in-out 2;
+    }
+
+    @keyframes waitlistPulse {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(232, 255, 0, 0.7);
+      }
+      50% {
+        transform: scale(1.03);
+        box-shadow: 0 0 0 8px rgba(232, 255, 0, 0);
+      }
+      100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(232, 255, 0, 0);
+      }
     }
   }
 </style>
