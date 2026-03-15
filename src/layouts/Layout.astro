@@ -1,0 +1,111 @@
+---
+import '../styles/global.css';
+
+export interface Props {
+  title?: string;
+}
+const { title = 'AreTheyCringe — Social Graph Analysis' } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Analyze who someone follows on social media to surface extremist accounts, conspiracy theorists, hate groups, and bad actors hiding in plain sight." />
+    <title>{title}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-bg text-text font-body min-h-screen">
+    <!-- Scan-line overlay -->
+    <div class="scanlines" aria-hidden="true"></div>
+
+    <!-- Sticky Nav -->
+    <nav id="main-nav" class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 py-4 transition-all duration-200">
+      <a href="/" class="font-display text-accent text-3xl tracking-wide hover:opacity-90 transition-opacity">
+        ARETHEYCRINGE
+      </a>
+      <div class="flex items-center gap-6">
+        <a href="#how-it-works" class="font-body text-textSecondary text-sm hover:text-text transition-colors hidden sm:block">How It Works</a>
+        <a href="#use-cases" class="font-body text-textSecondary text-sm hover:text-text transition-colors hidden sm:block">Use Cases</a>
+        <a href="#waitlist" class="font-body text-sm bg-accent text-black px-4 py-2 font-semibold hover:brightness-110 transition-all">
+          Join Waitlist
+        </a>
+      </div>
+    </nav>
+
+    <!-- Page Content -->
+    <main>
+      <slot />
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-muted/30 py-8 px-6">
+      <p class="font-mono text-muted text-xs text-center">
+        AreTheyCringe &copy; 2025 — Public data. Public accountability.
+      </p>
+    </footer>
+
+    <script is:inline>
+      const nav = document.getElementById('main-nav');
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 10) {
+          nav.classList.add('nav-scrolled');
+        } else {
+          nav.classList.remove('nav-scrolled');
+        }
+      });
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: repeating-linear-gradient(
+      transparent 0,
+      transparent 1px,
+      rgba(255, 255, 255, 0.015) 1px,
+      rgba(255, 255, 255, 0.015) 2px
+    );
+    background-size: 100% 3px;
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  .scanlines {
+    display: none;
+  }
+
+  .nav-scrolled {
+    border-bottom: 1px solid #555555;
+    background-color: rgba(12, 12, 12, 0.95);
+    backdrop-filter: blur(8px);
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+  }
+
+  .shake {
+    animation: shake 0.3s ease-in-out;
+  }
+
+  section + section {
+    border-top: 1px solid #555555;
+  }
+</style>
