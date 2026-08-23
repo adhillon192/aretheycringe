@@ -1,6 +1,6 @@
-# AreTheyCringe Landing Page
+# Priorcheck Landing Page
 
-Marketing and waitlist site for the AreTheyCringe product concept.
+Marketing and waitlist site for the Priorcheck product concept.
 
 This repo is a single-page Astro site with:
 - A hero section with an interactive mock analyzer UI
